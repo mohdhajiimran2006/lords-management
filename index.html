@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lords Institute ERP | Professional Portal</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family: 'Segoe UI', sans-serif;
+  background-image: url("https://www.lords.ac.in/wp-content/uploads/2022/03/CareersHomePage.jpg");
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+  position: relative;
+  color: white;
+}
+
+body::before {
+  content:"";
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.82);
+  z-index:0;
+}
+
+/* --- HEADER & COMPACT SEARCH --- */
+header{
+  position: relative;
+  z-index:10;
+  background: linear-gradient(135deg, #0b2d5c 0%, #154c8a 100%);
+  text-align:center;
+  padding:15px;
+  border-bottom: 4px solid #d4af37;
+}
+.logo-img { height: 70px; margin-bottom: 5px; }
+header h1 { margin:0; font-size:22px; color: #fff; text-transform: uppercase; }
+
+.nav-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+nav a {
+    color:#fff; text-decoration:none; font-weight:700; cursor:pointer; 
+    font-size: 13px; padding: 6px 12px; border-radius: 4px;
+    background: rgba(255,255,255,0.05); transition: 0.3s;
+}
+nav a:hover { background: #d4af37; color: #0b2d5c; }
+
+/* SMALL SEARCH BAR STYLE */
+.search-box-small {
+    display: flex;
+    background: rgba(255,255,255,0.9);
+    border-radius: 20px;
+    padding: 2px 5px;
+    border: 1px solid #d4af37;
+    width: 220px;
+}
+.search-box-small input {
+    border: none;
+    background: transparent;
+    padding: 5px 10px;
+    width: 140px;
+    font-size: 12px;
+    outline: none;
+    color: #333;
+}
+.search-box-small button {
+    background: #0b2d5c;
+    color: white;
+    border: none;
+    border-radius: 15px;
+    padding: 4px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* --- TICKERS --- */
+.ticker-wrapper {
+    position: relative; z-index: 10; background: rgba(0,0,0,0.6);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    overflow: hidden; white-space: nowrap; padding: 8px 0;
+}
+.ticker-content {
+    display: inline-block; padding-left: 100%;
+    animation: marquee 25s linear infinite;
+    font-weight: 700; font-size: 13px; text-transform: uppercase;
+}
+@keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+
+/* --- SECTIONS --- */
+.section{display:none; position: relative; z-index: 1; padding: 25px 15px;}
+.card{
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px);
+  max-width:1000px;
+  margin:0 auto; padding:25px;
+  border-radius:12px; border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* RESULT DISPLAY POPUP */
+#resOverlay {
+    display: none; position: fixed; top: 120px; right: 20px;
+    width: 280px; background: #154c8a; border: 2px solid #d4af37;
+    z-index: 100; padding: 15px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+.about-box h2 { color: #d4af37; font-size: 20px; margin-bottom: 10px; border-left: 3px solid #d4af37; padding-left: 10px;}
+
+/* ADMIN AREA */
+.admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.scroll-area { max-height: 180px; overflow-y: auto; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 5px; }
+input, select { width:100%; padding:8px; margin:4px 0; border-radius:4px; border:none; font-size: 13px; }
+.btn-save { background: #2ecc71; color: white; font-weight: bold; cursor: pointer; padding: 10px; margin-top: 5px; border-radius: 4px; border: none; width: 100%;}
+.btn-del { background: #ff4757; color: white; padding: 3px 8px; font-size: 11px; border: none; cursor: pointer; border-radius: 3px;}
+
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { border: 1px solid rgba(255,255,255,0.1); padding: 8px; font-size: 13px; }
+th { background: #d4af37; color: #0b2d5c; }
+</style>
+</head>
+
+<body>
+
+<header>
+    <img src="https://www.lords.ac.in/wp-content/uploads/2023/02/Lords-New-Official-Logo.png" class="logo-img">
+    <h1>Lords Institute of Engineering and Technology</h1>
+    
+    <div class="nav-container">
+        <nav style="display: flex; gap: 10px;">
+            <a onclick="showSection('home')">Home</a>
+            <a onclick="showSection('facultyPage')">Faculty</a>
+            <a onclick="showSection('records')">Students</a>
+            <a onclick="secureAdmin()">Admin Hub</a>
+        </nav>
+        
+        <div class="search-box-small">
+            <input id="searchRoll" type="text" placeholder="Roll Number...">
+            <button onclick="checkResult()">Search</button>
+        </div>
+    </div>
+</header>
+
+<div id="resOverlay">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-weight:bold; color:#d4af37">Result Found</span>
+        <span style="cursor:pointer;" onclick="this.parentElement.parentElement.style.display='none'">✖</span>
+    </div>
+    <div id="resultDisplay" style="margin-top:10px; font-size:13px;"></div>
+</div>
+
+<div class="ticker-wrapper"><div id="blog1" class="ticker-content" style="color: #00ffcc;">Welcome to Lords ERP - Autonomous Institution</div></div>
+<div class="ticker-wrapper" style="background: rgba(21, 76, 138, 0.3);"><div id="blog2" class="ticker-content" style="color: #ffcc00;">NBA & NAAC 'A' Grade Accreditation</div></div>
+
+<div id="home" class="section" style="display:block">
+    <div class="card">
+        <div class="about-grid">
+            <div class="about-box">
+                <h2>The Institution</h2>
+                <p style="font-size:14px; line-height:1.6;">Lords Institute of Engineering and Technology (LIET) was established in 2002. As an autonomous institution, we focus on providing a globally competitive environment for our students through advanced engineering programs and research-driven education.</p>
+            </div>
+            <div class="about-box">
+                <h2>Academic Faculty</h2>
+                <p style="font-size:14px; line-height:1.6;">Our campus is home to over 300+ dedicated faculty members. They are experts in their fields, specializing in Artificial Intelligence, Machine Learning, Data Science, and core Engineering disciplines to guide students toward successful careers.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="facultyPage" class="section">
+    <div class="card">
+        <h2 style="color:#d4af37">Official Faculty List</h2>
+        <table>
+            <thead><tr><th>Name</th><th>Department</th><th>Designation</th></tr></thead>
+            <tbody id="facultyPublicList"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="records" class="section">
+    <div class="card">
+        <h2 style="color:#d4af37">Active Student Database</h2>
+        <table>
+            <thead><tr><th>Roll No</th><th>Name</th><th>Branch</th><th>Grade</th></tr></thead>
+            <tbody id="publicList"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="adminHub" class="section">
+    <div class="card">
+        <div class="admin-grid">
+            <div>
+                <h3 style="color:#d4af37">Student & Blog Controls</h3>
+                <input id="sRoll" placeholder="Roll No"><input id="sName" placeholder="Full Name">
+                <select id="sBranch" onchange="loadSubjectInputs()"><option value="">Select Branch</option><option value="CSE">CSE</option><option value="IT">IT</option><option value="ECE">ECE</option></select>
+                <div id="subInputsContainer"></div>
+                <button class="btn-save" onclick="saveStudent()">Save Student</button>
+                <h3 style="color:#d4af37; margin-top:15px">Update Tickers</h3>
+                <input id="b1Text" placeholder="Ticker 1 Text"><input id="b2Text" placeholder="Ticker 2 Text">
+                <button class="btn-save" style="background:#0b2d5c" onclick="updateBlogs()">Push Update</button>
+            </div>
+            <div>
+                <h3 style="color:#d4af37">Faculty & Data Management</h3>
+                <input id="fName" placeholder="Name"><input id="fDept" placeholder="Department"><input id="fDesig" placeholder="Designation">
+                <button class="btn-save" onclick="saveFaculty()">Add Faculty</button>
+                <h4 style="margin-top:15px; font-size:14px">Delete Records:</h4>
+                <div class="scroll-area">
+                    <p style="font-size:11px; margin:2px 0;">Faculty:</p>
+                    <table id="adminFacDeleteList"></table>
+                    <p style="font-size:11px; margin:8px 0 2px 0;">Students:</p>
+                    <table id="adminStuDeleteList"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const ADMIN_PASSWORD = "kaleem@786";
+firebase.initializeApp({
+    apiKey: "AIzaSyBRWeI_xpdyklUsK8blfUw2OX53YUnvg-Q",
+    authDomain: "students-marks-a1f98.firebaseapp.com",
+    databaseURL: "https://students-marks-a1f98-default-rtdb.firebaseio.com",
+    projectId: "students-marks-a1f98"
+});
+const db = firebase.database();
+
+const subjectsMap = {
+    CSE:["Physics","PPS","Maths","BEE","ES"],
+    IT:["Chemistry","Programming","Maths","UHV","IC"],
+    ECE:["Physics","Circuits","Maths","Electronics","ES"]
+};
+
+function showSection(id){
+    document.querySelectorAll(".section").forEach(s=>s.style.display="none");
+    document.getElementById(id).style.display="block";
+}
+function secureAdmin(){
+    if(prompt("Admin Access Key:") === ADMIN_PASSWORD) showSection('adminHub');
+}
+
+/* DATA MANAGEMENT */
+function loadSubjectInputs(){
+    const b = document.getElementById("sBranch").value;
+    const cont = document.getElementById("subInputsContainer");
+    cont.innerHTML = "";
+    if(b) subjectsMap[b].forEach(s => cont.innerHTML += `<input class="m-val" type="number" placeholder="${s} Marks">`);
+}
+
+function saveStudent(){
+    const roll = document.getElementById("sRoll").value.trim();
+    const name = document.getElementById("sName").value.trim();
+    const branch = document.getElementById("sBranch").value;
+    const marks = document.querySelectorAll(".m-val");
+    let total = 0; marks.forEach(m => total += Number(m.value || 0));
+    const percent = (total / (marks.length * 100) * 100).toFixed(2);
+    let grade = percent >= 90 ? "A+" : percent >= 75 ? "A" : percent >= 60 ? "B" : "C";
+    db.ref("students/"+roll).set({ roll, name, branch, total, percent, grade });
+    alert("Saved!");
+}
+
+function saveFaculty(){
+    const name = document.getElementById("fName").value;
+    const dept = document.getElementById("fDept").value;
+    const desig = document.getElementById("fDesig").value;
+    if(name) db.ref("faculty").push({ name, dept, desig });
+    alert("Faculty Added!");
+}
+
+function updateBlogs(){
+    const b1 = document.getElementById("b1Text").value;
+    const b2 = document.getElementById("b2Text").value;
+    db.ref("blogs").update({ b1, b2 });
+}
+
+/* SYNC DATA */
+db.ref("students").on("value", snap => {
+    const pub = document.getElementById("publicList");
+    const adm = document.getElementById("adminStuDeleteList");
+    pub.innerHTML = adm.innerHTML = "";
+    snap.forEach(c => {
+        const d = c.val();
+        pub.innerHTML += `<tr><td>${d.roll}</td><td>${d.name}</td><td>${d.branch}</td><td>${d.grade}</td></tr>`;
+        adm.innerHTML += `<tr><td>${d.roll}</td><td><button class="btn-del" onclick="db.ref('students/${d.roll}').remove()">Del</button></td></tr>`;
+    });
+});
+
+db.ref("faculty").on("value", snap => {
+    const pub = document.getElementById("facultyPublicList");
+    const adm = document.getElementById("adminFacDeleteList");
+    pub.innerHTML = adm.innerHTML = "";
+    snap.forEach(c => {
+        const d = c.val();
+        pub.innerHTML += `<tr><td>${d.name}</td><td>${d.dept}</td><td>${d.desig}</td></tr>`;
+        adm.innerHTML += `<tr><td>${d.name}</td><td><button class="btn-del" onclick="db.ref('faculty/${c.key}').remove()">Del</button></td></tr>`;
+    });
+});
+
+db.ref("blogs").on("value", snap => {
+    const d = snap.val();
+    if(d.b1) document.getElementById("blog1").innerText = d.b1;
+    if(d.b2) document.getElementById("blog2").innerText = d.b2;
+});
+
+function checkResult(){
+    const roll = document.getElementById("searchRoll").value.trim();
+    if(!roll) return;
+    db.ref("students/"+roll).once("value", s => {
+        const out = document.getElementById("resultDisplay");
+        const overlay = document.getElementById("resOverlay");
+        overlay.style.display = "block";
+        if(!s.exists()) { out.innerHTML = "No record found for " + roll; return; }
+        const d = s.val();
+        out.innerHTML = `<b style="color:#fff">${d.name}</b><br>Branch: ${d.branch}<br>Grade: <span style="color:#2ecc71">${d.grade}</span> (${d.percent}%)`;
+    });
+}
+</script>
+</body>
+</html>
